@@ -20,6 +20,7 @@ extern "C"
 #include "rcutils/time.h"
 
 #include <inttypes.h>
+#include <time.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +68,39 @@ rcutils_time_point_value_as_seconds_string(
     rcutils_snprintf(
       str, str_size, "%s%.10" PRId64 ".%.9" PRId64,
       (*time_point >= 0) ? "" : "-", seconds, nanoseconds) < 0)
+  {
+    RCUTILS_SET_ERROR_MSG("failed to format time point into string as float seconds");
+    return RCUTILS_RET_ERROR;
+  }
+  return RCUTILS_RET_OK;
+}
+
+rcutils_ret_t
+rcutils_time_point_value_as_date_string(
+  const rcutils_time_point_value_t * time_point,
+  char * str,
+  size_t str_size)
+{
+  RCUTILS_CHECK_ARGUMENT_FOR_NULL(time_point, RCUTILS_RET_INVALID_ARGUMENT);
+  RCUTILS_CHECK_ARGUMENT_FOR_NULL(str, RCUTILS_RET_INVALID_ARGUMENT);
+  if (0 == str_size) {
+    return RCUTILS_RET_OK;
+  }
+  // best to abs it to avoid issues with negative values in C89, see:
+  //   https://stackoverflow.com/a/3604984/671658
+  uint64_t abs_time_point = (uint64_t)llabs(*time_point);
+  // break into two parts to avoid floating point error
+  uint64_t seconds = abs_time_point / (1000u * 1000u * 1000u);
+  uint64_t nanoseconds = abs_time_point % (1000u * 1000u * 1000u);
+  struct tm *ttime;
+  char now[64];
+  time_t seconds_time = seconds; 
+  ttime = localtime(&seconds_time);
+  strftime(now, 64, "%Y-%m-%d %H:%M:%S", ttime);
+  if (
+    rcutils_snprintf(
+      str, str_size, "%s%.19" "s" ".%.3" PRId64,
+      (*time_point >= 0) ? "" : "-", now, nanoseconds) < 0)
   {
     RCUTILS_SET_ERROR_MSG("failed to format time point into string as float seconds");
     return RCUTILS_RET_ERROR;
