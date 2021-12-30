@@ -181,6 +181,44 @@ rcutils_time_point_value_as_seconds_string(
   const rcutils_time_point_value_t * time_point,
   char * str,
   size_t str_size);
+/// Return a time point as floating point seconds in a string.
+/**
+ * The number is always fixed width, with left padding zeros up to the maximum
+ * number of digits for the mantissa that the time point can represent and a
+ * characteristic (fractional-part) with a fixed width of 9 digits.
+ * Right now that means the mantissa is always 10 digits to add up to 19 total
+ * for the signed 64-bit time point type.
+ * Negative values will have a leading `-`, so they will be one character
+ * longer then positive values.
+ *
+ * The recommended minimum size of the input string is 32 characters, but
+ * 22 (` ` or `-` for sign, 19 digits, decimal point, null terminator) should
+ * be sufficient for now.
+ * If the given string is not large enough, the result will be truncated.
+ *
+ * <hr>
+ * Attribute          | Adherence
+ * ------------------ | -------------
+ * Allocates Memory   | No [1]
+ * Thread-Safe        | Yes
+ * Uses Atomics       | No
+ * Lock-Free          | Yes
+ * <i>[1] if `snprintf()` does not allocate additional memory internally</i>
+ *
+ * \param[in] time_point the time to be made into a string
+ * \param[out] str the output string in which it is stored
+ * \param[in] str_size the size of the output string
+ * \return #RCUTILS_RET_OK if successful (even if truncated), or
+ * \return #RCUTILS_RET_INVALID_ARGUMENT if any arguments are invalid, or
+ * \return #RCUTILS_RET_ERROR if an unspecified error occur.
+ */
+RCUTILS_PUBLIC
+RCUTILS_WARN_UNUSED
+rcutils_ret_t
+rcutils_time_point_value_as_date_string(
+  const rcutils_time_point_value_t * time_point,
+  char * str,
+  size_t str_size);
 
 #ifdef __cplusplus
 }
