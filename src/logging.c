@@ -90,7 +90,7 @@ bool g_rcutils_logging_initialized = false;
 
 char g_rcutils_logging_output_format_string[RCUTILS_LOGGING_MAX_OUTPUT_FORMAT_LEN];
 static const char * g_rcutils_logging_default_output_format =
-  "[{severity}] [{time}] [{name}]: {message}";
+  "[{severity}] [{time}:{date}] [{name}]: {message}";
 
 static rcutils_allocator_t g_rcutils_logging_allocator;
 
@@ -593,6 +593,20 @@ const char * expand_time(
   APPEND_AND_RETURN_LOG_OUTPUT(numeric_storage);
 }
 
+const char * expand_date(
+  const logging_input * logging_input, rcutils_char_array_t * logging_output,
+  rcutils_ret_t (* time_func)(const rcutils_time_point_value_t *, char *, size_t))
+{
+  // Temporary, local storage for integer/float conversion to string
+  // Note:
+  //   32 characters enough, because the most it can be is 20 characters
+  //   for the 19 possible digits in a signed 64-bit number plus the optional
+  //   decimal point in the floating point seconds version
+  char numeric_storage[32];
+  OK_OR_RETURN_NULL(time_func(&logging_input->timestamp, numeric_storage, sizeof(numeric_storage)));
+  APPEND_AND_RETURN_LOG_OUTPUT(numeric_storage);
+}
+
 const char * expand_time_as_seconds(
   const logging_input * logging_input,
   rcutils_char_array_t * logging_output)
@@ -605,6 +619,13 @@ const char * expand_time_as_nanoseconds(
   rcutils_char_array_t * logging_output)
 {
   return expand_time(logging_input, logging_output, rcutils_time_point_value_as_nanoseconds_string);
+}
+
+const char * expand_time_as_date(
+  const logging_input * logging_input,
+  rcutils_char_array_t * logging_output)
+{
+  return expand_date(logging_input, logging_output, rcutils_time_point_value_as_date_string);
 }
 
 const char * expand_line_number(
@@ -684,6 +705,7 @@ static const token_map_entry tokens[] = {
   {.token = "function_name", .handler = expand_function_name},
   {.token = "file_name", .handler = expand_file_name},
   {.token = "time", .handler = expand_time_as_seconds},
+  {.token = "date", .handler = expand_time_as_date},
   {.token = "time_as_nanoseconds", .handler = expand_time_as_nanoseconds},
   {.token = "line_number", .handler = expand_line_number},
 };
